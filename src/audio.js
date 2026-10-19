@@ -31,7 +31,7 @@ export const PRESETS = [
     ],
     carrier: 216,
     beat: 14,
-    tempoMs: 1800,
+    tempoMs: 1600,
     ambient: 'vinyl',
   },
   {
@@ -50,7 +50,7 @@ export const PRESETS = [
     ],
     carrier: 220,
     beat: 40,
-    tempoMs: 2400,
+    tempoMs: 2200,
     ambient: 'subtle_pink',
   },
   {
@@ -69,7 +69,7 @@ export const PRESETS = [
     ],
     carrier: 216,
     beat: 14,
-    tempoMs: 2000,
+    tempoMs: 1800,
     ambient: 'rain',
   },
   {
@@ -88,7 +88,7 @@ export const PRESETS = [
     ],
     carrier: 220,
     beat: 10,
-    tempoMs: 1600,
+    tempoMs: 1500,
     ambient: 'air',
   },
   {
@@ -107,7 +107,7 @@ export const PRESETS = [
     ],
     carrier: 220,
     beat: 10,
-    tempoMs: 2500,
+    tempoMs: 2200,
     ambient: 'ocean',
   },
   {
@@ -126,7 +126,7 @@ export const PRESETS = [
     ],
     carrier: 264,
     beat: 6,
-    tempoMs: 2200,
+    tempoMs: 2000,
     ambient: 'crystal',
   },
   {
@@ -144,7 +144,7 @@ export const PRESETS = [
     ],
     carrier: 136.1,
     beat: 6,
-    tempoMs: 2800,
+    tempoMs: 2400,
     ambient: 'temple',
   },
   {
@@ -163,7 +163,7 @@ export const PRESETS = [
     ],
     carrier: 196,
     beat: 2.5,
-    tempoMs: 3200,
+    tempoMs: 2800,
     ambient: 'hearth',
   },
   {
@@ -173,7 +173,7 @@ export const PRESETS = [
     d: 'Deep, warm atmospheric rumble that shields distractions with zero high-pitched static',
     type: 'noise',
     noiseType: 'brown',
-    filterFreq: 300,
+    filterFreq: 320,
   },
   {
     id: 'pink_warm',
@@ -186,7 +186,7 @@ export const PRESETS = [
   },
 ];
 
-/* ── Seamless Buffer Noise Generators ── */
+/* ── Seamless Buffer Noise Generator ── */
 function createNoiseBuffer(c, type) {
   const sampleRate = c.sampleRate;
   const length = sampleRate * 5;
@@ -221,7 +221,9 @@ function createNoiseBuffer(c, type) {
 
 export const wake = () => {
   ctx ??= new (window.AudioContext || window.webkitAudioContext)();
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
 };
 
 export const playing = () => cur?.id;
@@ -230,6 +232,7 @@ export const getAnalyser = () => analyser;
 
 /* ══════════════════════════════════════════════════════════════
    INSTRUMENT SYNTHESIZERS (Rhodes Piano, Kalimba, Chimes, Flute)
+   Audible, Punchy, Warm Acoustic Voicings
    ══════════════════════════════════════════════════════════════ */
 function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano', velocity = 0.8) {
   const masterNoteGain = c.createGain();
@@ -237,7 +240,7 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
   masterNoteGain.connect(dest);
 
   if (style === 'piano' || style === 'piano_ambient') {
-    // 🎹 Warm Electric / Felt Piano (Fundamental Sine + Warm Triangle + Soft Tine Strike)
+    // 🎹 Warm Electric / Felt Piano
     const osc1 = c.createOscillator();
     const osc2 = c.createOscillator();
     const tine = c.createOscillator();
@@ -247,25 +250,25 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
 
     osc2.type = 'triangle';
     osc2.frequency.setValueAtTime(freq, time);
-    osc2.detune.setValueAtTime(2.5, time); // warm chorus warmth
+    osc2.detune.setValueAtTime(3.0, time); // warm stereo chorus
 
-    // Soft tine acoustic strike
     tine.type = 'sine';
     tine.frequency.setValueAtTime(freq * 3, time);
 
     const filter = c.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(Math.min(1200, freq * 3.5), time);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(200, freq * 1.2), time + duration * 0.8);
+    filter.frequency.setValueAtTime(Math.min(1400, freq * 4.0), time);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(240, freq * 1.4), time + duration * 0.7);
 
     const osc1Gain = c.createGain();
     const osc2Gain = c.createGain();
     const tineGain = c.createGain();
 
-    osc1Gain.gain.setValueAtTime(0.28 * velocity, time);
-    osc2Gain.gain.setValueAtTime(0.12 * velocity, time);
-    tineGain.gain.setValueAtTime(0.04 * velocity, time);
-    tineGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.15); // quick metallic decay
+    // CLEAR, AUDIBLE VOLUME LEVELS
+    osc1Gain.gain.setValueAtTime(0.45 * velocity, time);
+    osc2Gain.gain.setValueAtTime(0.25 * velocity, time);
+    tineGain.gain.setValueAtTime(0.08 * velocity, time);
+    tineGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
 
     osc1.connect(osc1Gain);
     osc2.connect(osc2Gain);
@@ -277,8 +280,8 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
     filter.connect(masterNoteGain);
 
     // Natural Piano Envelope
-    masterNoteGain.gain.exponentialRampToValueAtTime(1.0, time + 0.02);
-    masterNoteGain.gain.exponentialRampToValueAtTime(0.35, time + 0.35);
+    masterNoteGain.gain.linearRampToValueAtTime(velocity * 0.85, time + 0.02);
+    masterNoteGain.gain.exponentialRampToValueAtTime(velocity * 0.35, time + 0.3);
     masterNoteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
 
     osc1.start(time);
@@ -289,7 +292,7 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
     osc2.stop(time + duration + 0.1);
     tine.stop(time + duration + 0.1);
   } else if (style === 'kalimba' || style === 'bells') {
-    // 🔔 Peaceful Kalimba / Music Box / Crystal Bell
+    // 🔔 Peaceful Kalimba / Crystal Bell
     const osc = c.createOscillator();
     const overtone = c.createOscillator();
 
@@ -297,21 +300,21 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
     osc.frequency.setValueAtTime(freq, time);
 
     overtone.type = 'sine';
-    overtone.frequency.setValueAtTime(freq * 2.756, time); // acoustic inharmonic bell ratio
+    overtone.frequency.setValueAtTime(freq * 2.756, time);
 
     const oscGain = c.createGain();
     const overtoneGain = c.createGain();
 
-    oscGain.gain.setValueAtTime(0.25 * velocity, time);
-    overtoneGain.gain.setValueAtTime(0.06 * velocity, time);
-    overtoneGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4);
+    oscGain.gain.setValueAtTime(0.45 * velocity, time);
+    overtoneGain.gain.setValueAtTime(0.12 * velocity, time);
+    overtoneGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.35);
 
     osc.connect(oscGain);
     overtone.connect(overtoneGain);
     oscGain.connect(masterNoteGain);
     overtoneGain.connect(masterNoteGain);
 
-    masterNoteGain.gain.exponentialRampToValueAtTime(1.0, time + 0.01);
+    masterNoteGain.gain.linearRampToValueAtTime(velocity * 0.85, time + 0.01);
     masterNoteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration * 1.2);
 
     osc.start(time);
@@ -319,24 +322,23 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
     osc.stop(time + duration * 1.3);
     overtone.stop(time + duration * 1.3);
   } else {
-    // 🪈 Soothing Temple Flute
+    // 🪈 Temple Flute
     const osc = c.createOscillator();
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(freq, time);
 
     const filter = c.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(freq * 2.2, time);
+    filter.frequency.setValueAtTime(freq * 2.5, time);
 
     const fGain = c.createGain();
-    fGain.gain.setValueAtTime(0.22 * velocity, time);
+    fGain.gain.setValueAtTime(0.4 * velocity, time);
 
     osc.connect(filter);
     filter.connect(fGain);
     fGain.connect(masterNoteGain);
 
-    // Soft breathy attack and release
-    masterNoteGain.gain.exponentialRampToValueAtTime(1.0, time + 0.12);
+    masterNoteGain.gain.linearRampToValueAtTime(velocity * 0.75, time + 0.1);
     masterNoteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
 
     osc.start(time);
@@ -347,15 +349,15 @@ function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano'
 /* ══════════════════════════════════════════════════════════════
    PLAY ENGINE: Real Generative Melodic Music + Brainwave Waves
    ══════════════════════════════════════════════════════════════ */
-export function play(preset, vol = 0.5) {
+export function play(preset, vol = 0.6) {
   stop();
   wake();
 
   const now = ctx.currentTime;
   const master = ctx.createGain();
-  master.gain.setValueAtTime(0.0001, now);
-  // Smooth pleasant fade-in over 1.2s to prevent click
-  master.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol), now + 1.2);
+  // Immediate audible volume, smoothly ramped over 0.2s (no 1.2s delay or silence!)
+  master.gain.setValueAtTime(0.01, now);
+  master.gain.linearRampToValueAtTime(Math.max(0.05, vol), now + 0.25);
 
   if (!analyser) {
     analyser = ctx.createAnalyser();
@@ -366,7 +368,15 @@ export function play(preset, vol = 0.5) {
   analyser.connect(ctx.destination);
 
   const activeNodes = [];
-  let musicTimer = null;
+  const curSession = {
+    id: preset.id,
+    nodes: activeNodes,
+    master,
+    musicTimer: null,
+    active: true,
+  };
+  // CRUCIAL: Set cur immediately so the music loop starts running right away!
+  cur = curSession;
 
   const register = (node) => {
     activeNodes.push(node);
@@ -376,19 +386,19 @@ export function play(preset, vol = 0.5) {
   /* ── 1. REAL GENERATIVE PEACEFUL MUSIC ── */
   if (preset.type === 'music') {
     const musicBus = register(ctx.createGain());
-    musicBus.gain.setValueAtTime(0.85, now);
+    musicBus.gain.setValueAtTime(1.0, now);
     musicBus.connect(master);
 
-    // A. Warm Background Pad Drone (Soft Chord Base)
+    // A. Warm Background Pad Drone (Soft Sustained Chord Base)
     let chordIndex = 0;
     const padGain = register(ctx.createGain());
-    padGain.gain.setValueAtTime(0.12, now);
+    padGain.gain.setValueAtTime(0.22, now);
     padGain.connect(musicBus);
 
-    // B. Subtle Brainwave Entrainment Underneath Music (Pleasant, warm, non-headache)
+    // B. Subtle Brainwave Entrainment Underneath Music
     if (preset.carrier && preset.beat) {
       const beatGain = register(ctx.createGain());
-      beatGain.gain.setValueAtTime(0.035, now); // Soft, comfortable background presence
+      beatGain.gain.setValueAtTime(0.04, now); // Soft, comfortable background presence
 
       const beatFilter = register(ctx.createBiquadFilter());
       beatFilter.type = 'lowpass';
@@ -416,7 +426,7 @@ export function play(preset, vol = 0.5) {
       beatGain.connect(master);
     }
 
-    // C. Natural Ambient Texture (Rain, Ocean, Vinyl Crackle, Air)
+    // C. Natural Ambient Texture (Rain, Ocean, Vinyl Crackle)
     if (preset.ambient === 'rain') {
       const pNoise = register(createNoiseBuffer(ctx, 'pink'));
       const rFilter = register(ctx.createBiquadFilter());
@@ -424,7 +434,7 @@ export function play(preset, vol = 0.5) {
       rFilter.frequency.setValueAtTime(650, now);
       rFilter.Q.setValueAtTime(0.7, now);
       const rGain = register(ctx.createGain());
-      rGain.gain.setValueAtTime(0.14, now);
+      rGain.gain.setValueAtTime(0.18, now);
       pNoise.connect(rFilter);
       rFilter.connect(rGain);
       rGain.connect(master);
@@ -435,7 +445,7 @@ export function play(preset, vol = 0.5) {
       oFilter.type = 'lowpass';
       oFilter.frequency.setValueAtTime(240, now);
       const oGain = register(ctx.createGain());
-      oGain.gain.setValueAtTime(0.18, now);
+      oGain.gain.setValueAtTime(0.2, now);
       const oLfo = register(ctx.createOscillator());
       const oLfoGain = register(ctx.createGain());
       oLfo.frequency.setValueAtTime(0.09, now);
@@ -453,7 +463,7 @@ export function play(preset, vol = 0.5) {
       vFilter.type = 'lowpass';
       vFilter.frequency.setValueAtTime(280, now);
       const vGain = register(ctx.createGain());
-      vGain.gain.setValueAtTime(0.08, now);
+      vGain.gain.setValueAtTime(0.09, now);
       bNoise.connect(vFilter);
       vFilter.connect(vGain);
       vGain.connect(master);
@@ -461,14 +471,13 @@ export function play(preset, vol = 0.5) {
     }
 
     // D. Generative Music Melody Sequencer Loop
-    // Schedules peaceful, harmonious notes and chord progressions over time
     const chords = preset.chords || [[N.C3, N.G3, N.E4]];
     const scale = preset.scale || [N.C4, N.D4, N.E4, N.G4, N.A4, N.C5];
-    const tempo = preset.tempoMs || 2000;
+    const tempo = preset.tempoMs || 1800;
 
     let step = 0;
     const playMusicalStep = () => {
-      if (!cur) return;
+      if (!curSession.active) return;
       const t = ctx.currentTime;
 
       // 1. Play Soft Background Chord Root & Harmony every 4 steps
@@ -476,27 +485,27 @@ export function play(preset, vol = 0.5) {
         const chord = chords[chordIndex % chords.length];
         chordIndex++;
         chord.forEach((freq) => {
-          playInstrumentNote(ctx, padGain, freq, t, 5.5, 'piano_ambient', 0.5);
+          playInstrumentNote(ctx, padGain, freq, t, 5.0, 'piano_ambient', 0.6);
         });
       }
 
       // 2. Play 1 or 2 Peaceful Melodic Notes
-      const noteCount = Math.random() > 0.4 ? 1 : 2;
+      const noteCount = Math.random() > 0.35 ? 1 : 2;
       for (let i = 0; i < noteCount; i++) {
-        const noteDelay = i * (0.35 + Math.random() * 0.25);
+        const noteDelay = i * (0.3 + Math.random() * 0.2);
         const randomNote = scale[Math.floor(Math.random() * scale.length)];
-        const velocity = 0.6 + Math.random() * 0.35;
-        const duration = 2.0 + Math.random() * 1.5;
+        const velocity = 0.75 + Math.random() * 0.3;
+        const duration = 2.0 + Math.random() * 1.2;
 
         playInstrumentNote(ctx, musicBus, randomNote, t + noteDelay, duration, preset.style, velocity);
       }
 
       step++;
       const nextDelay = tempo * (0.85 + Math.random() * 0.3); // humanized breathing tempo
-      musicTimer = setTimeout(playMusicalStep, nextDelay);
+      curSession.musicTimer = setTimeout(playMusicalStep, nextDelay);
     };
 
-    // Begin the peaceful music progression immediately
+    // Begin the peaceful music progression immediately!
     playMusicalStep();
   }
 
@@ -508,15 +517,13 @@ export function play(preset, vol = 0.5) {
     filter.frequency.setValueAtTime(preset.filterFreq || 400, now);
 
     const gain = register(ctx.createGain());
-    gain.gain.setValueAtTime(preset.noiseType === 'brown' ? 0.35 : 0.2, now);
+    gain.gain.setValueAtTime(preset.noiseType === 'brown' ? 0.4 : 0.25, now);
 
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(master);
     noise.start(now);
   }
-
-  cur = { id: preset.id, nodes: activeNodes, master, musicTimer };
 }
 
 export const setVol = (v) => {
@@ -532,14 +539,16 @@ export function stop() {
     sleepTimeout = null;
   }
   if (!cur) return;
-  const { nodes, master, musicTimer } = cur;
-  if (musicTimer) clearTimeout(musicTimer);
+  cur.active = false;
+  if (cur.musicTimer) clearTimeout(cur.musicTimer);
+
+  const { nodes, master } = cur;
   cur = null;
 
   if (ctx && master) {
     const now = ctx.currentTime;
     master.gain.cancelScheduledValues(now);
-    master.gain.setTargetAtTime(0.0001, now, 0.25); // Smooth fade-out
+    master.gain.setTargetAtTime(0.0001, now, 0.15); // Quick smooth fade-out
   }
 
   setTimeout(() => {
@@ -552,7 +561,7 @@ export function stop() {
     try {
       master.disconnect();
     } catch {}
-  }, 450);
+  }, 350);
 }
 
 export function setSleepTimer(minutes, onEnd) {
@@ -581,7 +590,7 @@ export function chime() {
     filter.frequency.setValueAtTime(f * 2.2, t);
 
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.18, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.25, t + 0.04);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
 
     o.connect(filter);
@@ -610,7 +619,7 @@ export function breatheCue(phase = 'inhale') {
   filter.frequency.setValueAtTime(freq * 1.8, now);
 
   g.gain.setValueAtTime(0.0001, now);
-  g.gain.exponentialRampToValueAtTime(0.07, now + 0.06);
+  g.gain.exponentialRampToValueAtTime(0.12, now + 0.06);
   g.gain.exponentialRampToValueAtTime(0.0001, now + 1.5);
 
   o.connect(filter);
