@@ -1053,7 +1053,7 @@ function SoundsView({ S, up, activeSound, handleSoundToggle, sleepMin, onSleepCh
     return () => cancelAnimationFrame(animId);
   }, [activeSound]);
 
-  const categories = ['All', 'Focus', 'Calm', 'Noise', 'Sleep', 'Energy'];
+  const categories = ['All', 'Focus', 'Nature', 'Calm', 'Sleep', 'Noise'];
   const filteredPresets = selectedCat === 'All'
     ? PRESETS
     : PRESETS.filter((p) => p.cat === selectedCat);
