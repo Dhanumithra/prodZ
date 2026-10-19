@@ -1,108 +1,177 @@
-// ProdZ Acoustic Engine: 100% local Web Audio synthesis.
-// Zero network, zero external samples. Voiced with warm analog-modeled filters,
-// musical harmonic intervals, and subtle brainwave entrainment to provide
-// soothing, pleasant, and audible soundscapes with ZERO high-pitched harshness or headache.
+// ProdZ Generative Music & Acoustic Engine: 100% local Web Audio synthesis.
+// Zero streaming, zero external audio files. Generates real, peaceful, melodic
+// study music (lo-fi piano, acoustic kalimba, ambient chord progressions, soothing rain)
+// with scientifically embedded brainwave entrainment (40Hz Gamma, 14Hz Beta, 10Hz Alpha).
 
 let ctx, cur, sleepTimeout;
 let analyser;
 
+// Musical Note Frequency Map (Hz)
+const N = {
+  C2: 65.41, D2: 73.42, E2: 82.41, F2: 87.31, G2: 98.00, A2: 110.00, B2: 123.47,
+  C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
+  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+  C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880.00,
+};
+
 export const PRESETS = [
   {
-    id: 'focus_gamma',
-    n: 'Velvet Focus (40 Hz Gamma)',
+    id: 'lofi_study_piano',
+    n: 'Lo-Fi Study Piano (14 Hz Beta)',
     cat: 'Focus',
-    d: 'Warm D-major ambient pad with subtle 40 Hz gamma pulse for deep work and high cognition without ear fatigue',
-    chord: [146.83, 185.00, 220.00, 293.66], // D3, F#3, A3, D4
-    filterFreq: 460,
-    carrier: 220,
-    beat: 40,
-    noiseType: 'pink',
-    noiseVol: 0.015,
-    lfoSpeed: 0.09,
-    type: 'pad_binaural',
-  },
-  {
-    id: 'study_beta',
-    n: 'Study Sanctuary (14 Hz Beta)',
-    cat: 'Focus',
-    d: 'Grounding 432 Hz Pythagorean fifths with gentle 14 Hz beta wave for reading retention and mental clarity',
-    chord: [108.00, 162.00, 216.00, 324.00], // Sub-octaves of 432 Hz
-    filterFreq: 480,
+    d: 'Peaceful electric piano playing soothing study melodies in A-minor over a warm vinyl crackle with 14 Hz beta wave',
+    type: 'music',
+    style: 'piano',
+    scale: [N.A3, N.C4, N.D4, N.E4, N.G4, N.A4, N.C5, N.D5, N.E5],
+    chords: [
+      [N.A2, N.E3, N.C4, N.E4], // Am
+      [N.F2, N.C3, N.A3, N.C4], // Fmaj7
+      [N.C2, N.G2, N.E3, N.G3], // C
+      [N.G2, N.D3, N.B3, N.D4], // G
+    ],
     carrier: 216,
     beat: 14,
-    noiseType: 'brown',
-    noiseVol: 0.02,
-    lfoSpeed: 0.07,
-    type: 'pad_binaural',
+    tempoMs: 1800,
+    ambient: 'vinyl',
   },
   {
-    id: 'ocean_surf',
-    n: 'Pacific Ocean Waves',
-    cat: 'Nature',
-    d: 'Rhythmic, natural ocean surf with 10-second wave swells crashing and receding gently on the shore',
-    type: 'ocean',
-    wavePeriod: 10,
+    id: 'deep_flow_ambient',
+    n: 'Deep Flow Ambient (40 Hz Gamma)',
+    cat: 'Focus',
+    d: 'Cinematic ambient piano & warm evolving pads playing deep concentration progressions with 40 Hz gamma flow',
+    type: 'music',
+    style: 'piano_ambient',
+    scale: [N.D3, N.F3, N.A3, N.C4, N.D4, N.F4, N.A4, N.C5],
+    chords: [
+      [N.D2, N.A2, N.F3, N.C4], // Dm7
+      [N.B2, N.F3, N.A3, N.D4], // Bbmaj7
+      [N.G2, N.D3, N.B3, N.F4], // Gm7
+      [N.A2, N.E3, N.C4, N.G4], // Am7
+    ],
+    carrier: 220,
+    beat: 40,
+    tempoMs: 2400,
+    ambient: 'subtle_pink',
   },
   {
-    id: 'forest_rain',
-    n: 'Gentle Forest Rain',
-    cat: 'Nature',
-    d: 'Cozy, soft rainfall filtered to remove harsh hiss, layered with distant ambient low-frequency warmth',
-    type: 'rain',
+    id: 'rainy_study',
+    n: 'Rainy Day Cafe Piano',
+    cat: 'Focus',
+    d: 'Melodic, cozy jazz piano chords and floating notes accompanied by gentle falling rain on a window',
+    type: 'music',
+    style: 'piano',
+    scale: [N.C4, N.D4, N.E4, N.G4, N.A4, N.C5, N.D5],
+    chords: [
+      [N.C3, N.G3, N.E4, N.B4], // Cmaj7
+      [N.A2, N.E3, N.C4, N.G4], // Am7
+      [N.D3, N.A3, N.F4, N.C5], // Dm7
+      [N.G2, N.D3, N.F4, N.B4], // G7
+    ],
+    carrier: 216,
+    beat: 14,
+    tempoMs: 2000,
+    ambient: 'rain',
   },
   {
-    id: 'alpha_calm',
-    n: 'Alpha Meadow (10 Hz Alpha)',
+    id: 'zen_kalimba',
+    n: 'Zen Garden Kalimba (10 Hz Alpha)',
     cat: 'Calm',
-    d: 'Warm, floating Fsus2 ambient pad with 10 Hz alpha pulse to ease stress and restore creative clarity',
-    chord: [174.61, 220.00, 261.63, 349.23], // F3, A3, C4, F4
-    filterFreq: 420,
+    d: 'Clear, peaceful acoustic music box & thumb piano notes playing mindful pentatonic patterns to melt stress away',
+    type: 'music',
+    style: 'kalimba',
+    scale: [N.G3, N.A3, N.C4, N.D4, N.E4, N.G4, N.A4, N.C5],
+    chords: [
+      [N.C3, N.G3, N.E4], // C
+      [N.G2, N.D3, N.B3], // G
+      [N.A2, N.E3, N.C4], // Am
+      [N.F2, N.C3, N.A3], // F
+    ],
     carrier: 220,
     beat: 10,
-    lfoSpeed: 0.08,
-    type: 'pad_binaural',
+    tempoMs: 1600,
+    ambient: 'air',
   },
   {
-    id: 'solfeggio_528',
-    n: 'Solfeggio 528 Hz Warmth',
-    cat: 'Calm',
-    d: 'Warm, choral C-major chord grounded in soothing low octaves (132 Hz & 264 Hz) with subtle, soft 528 Hz overtone',
-    type: 'solfeggio_warm',
+    id: 'ocean_piano',
+    n: 'Ocean Waves & Piano (Alpha)',
+    cat: 'Nature',
+    d: 'Gentle, drifting piano notes washing in and out alongside natural rhythmic Pacific surf',
+    type: 'music',
+    style: 'piano_ambient',
+    scale: [N.F3, N.G3, N.A3, N.C4, N.D4, N.F4, N.A4, N.C5],
+    chords: [
+      [N.F2, N.C3, N.A3, N.E4], // Fmaj7
+      [N.D2, N.A2, N.F3, N.C4], // Dm7
+      [N.B2, N.F3, N.D4, N.A4], // Bbmaj7
+      [N.C3, N.G3, N.E4, N.B4], // Cmaj7
+    ],
+    carrier: 220,
+    beat: 10,
+    tempoMs: 2500,
+    ambient: 'ocean',
   },
   {
-    id: 'theta_om',
-    n: 'Earth Om Meditation (6 Hz Theta)',
+    id: 'solfeggio_bells',
+    n: 'Celestial 528 Hz Chimes & Pad',
     cat: 'Calm',
-    d: 'Sacred 136.1 Hz Earth vibration with resonant octave and gentle 6 Hz theta pulse for deep intuitive calm',
-    chord: [136.10, 204.15, 272.20], // Earth Om harmonic triad
-    filterFreq: 380,
+    d: 'Soothing crystal singing bowls and gentle bell arpeggios voiced in harmonious 528 Hz and 432 Hz scales',
+    type: 'music',
+    style: 'bells',
+    scale: [N.C4, N.D4, N.E4, N.G4, N.A4, N.C5, 528.0],
+    chords: [
+      [N.C3, N.G3, N.C4, N.E4], // C
+      [N.F2, N.C3, N.A3, N.C4], // F
+      [N.A2, N.E3, N.C4, N.E4], // Am
+      [N.G2, N.D3, N.B3, N.D4], // G
+    ],
+    carrier: 264,
+    beat: 6,
+    tempoMs: 2200,
+    ambient: 'crystal',
+  },
+  {
+    id: 'theta_meditation',
+    n: 'Temple Meditation Flute (6 Hz Theta)',
+    cat: 'Calm',
+    d: 'Soothing Asian temple flute tones and Tibetan bowl drones for deep creative contemplation and stress release',
+    type: 'music',
+    style: 'flute',
+    scale: [N.D3, N.F3, N.G3, N.A3, N.C4, N.D4],
+    chords: [
+      [N.D2, N.A2, N.F3],
+      [N.G2, N.D3, N.B3],
+      [N.A2, N.E3, N.C4],
+    ],
     carrier: 136.1,
     beat: 6,
-    noiseType: 'brown',
-    noiseVol: 0.02,
-    lfoSpeed: 0.05,
-    type: 'pad_binaural',
+    tempoMs: 2800,
+    ambient: 'temple',
   },
   {
-    id: 'delta_sleep',
-    n: 'Delta Night Rest (2.5 Hz Delta)',
+    id: 'midnight_lullaby',
+    n: 'Midnight Lullaby Harp (2.5 Hz Delta)',
     cat: 'Sleep',
-    d: 'Audible, warm open-fifth drone (C3 & G3) layered with comforting brown noise and 2.5 Hz delta hum',
-    chord: [130.81, 196.00, 261.63], // C3, G3, C4 (clearly audible on all speakers)
-    filterFreq: 340,
+    d: 'Whisper-soft, slow acoustic harp notes and warm hearth rumble for drifting peacefully to sleep',
+    type: 'music',
+    style: 'kalimba',
+    scale: [N.C3, N.E3, N.G3, N.A3, N.C4, N.E4, N.G4],
+    chords: [
+      [N.C2, N.G2, N.E3],
+      [N.F2, N.C3, N.A3],
+      [N.A2, N.E3, N.C4],
+      [N.G2, N.D3, N.B3],
+    ],
     carrier: 196,
     beat: 2.5,
-    noiseType: 'brown',
-    noiseVol: 0.15,
-    lfoSpeed: 0.04,
-    type: 'pad_binaural',
+    tempoMs: 3200,
+    ambient: 'hearth',
   },
   {
     id: 'brown_warm',
     n: 'Velvet Brown Noise',
     cat: 'Noise',
     d: 'Deep, warm atmospheric rumble that shields distractions with zero high-pitched static',
-    type: 'pure_noise',
+    type: 'noise',
     noiseType: 'brown',
     filterFreq: 300,
   },
@@ -111,7 +180,7 @@ export const PRESETS = [
     n: 'Soft Acoustic Pink Noise',
     cat: 'Noise',
     d: 'Smooth, balanced pink spectrum tailored for masking speech and background chatter',
-    type: 'pure_noise',
+    type: 'noise',
     noiseType: 'pink',
     filterFreq: 950,
   },
@@ -120,7 +189,7 @@ export const PRESETS = [
 /* ── Seamless Buffer Noise Generators ── */
 function createNoiseBuffer(c, type) {
   const sampleRate = c.sampleRate;
-  const length = sampleRate * 5; // 5-second seamless loop
+  const length = sampleRate * 5;
   const buffer = c.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
 
@@ -129,13 +198,10 @@ function createNoiseBuffer(c, type) {
 
   for (let i = 0; i < length; i++) {
     const white = Math.random() * 2 - 1;
-
     if (type === 'brown') {
-      // True 6dB/octave brown noise integration
       lastOut = (lastOut + 0.02 * white) / 1.02;
       data[i] = lastOut * 3.2;
     } else {
-      // Paul Kellet's refined Pink Noise algorithm
       b0 = 0.99886 * b0 + white * 0.0555179;
       b1 = 0.99332 * b1 + white * 0.0750759;
       b2 = 0.96900 * b2 + white * 0.1538520;
@@ -163,7 +229,123 @@ export const getActivePreset = () => PRESETS.find(p => p.id === cur?.id) || null
 export const getAnalyser = () => analyser;
 
 /* ══════════════════════════════════════════════════════════════
-   PLAY ENGINE: Soothing Acoustic & Psychoacoustic Voicings
+   INSTRUMENT SYNTHESIZERS (Rhodes Piano, Kalimba, Chimes, Flute)
+   ══════════════════════════════════════════════════════════════ */
+function playInstrumentNote(c, dest, freq, time, duration = 2.0, style = 'piano', velocity = 0.8) {
+  const masterNoteGain = c.createGain();
+  masterNoteGain.gain.setValueAtTime(0.0001, time);
+  masterNoteGain.connect(dest);
+
+  if (style === 'piano' || style === 'piano_ambient') {
+    // 🎹 Warm Electric / Felt Piano (Fundamental Sine + Warm Triangle + Soft Tine Strike)
+    const osc1 = c.createOscillator();
+    const osc2 = c.createOscillator();
+    const tine = c.createOscillator();
+
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, time);
+
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(freq, time);
+    osc2.detune.setValueAtTime(2.5, time); // warm chorus warmth
+
+    // Soft tine acoustic strike
+    tine.type = 'sine';
+    tine.frequency.setValueAtTime(freq * 3, time);
+
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(Math.min(1200, freq * 3.5), time);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(200, freq * 1.2), time + duration * 0.8);
+
+    const osc1Gain = c.createGain();
+    const osc2Gain = c.createGain();
+    const tineGain = c.createGain();
+
+    osc1Gain.gain.setValueAtTime(0.28 * velocity, time);
+    osc2Gain.gain.setValueAtTime(0.12 * velocity, time);
+    tineGain.gain.setValueAtTime(0.04 * velocity, time);
+    tineGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.15); // quick metallic decay
+
+    osc1.connect(osc1Gain);
+    osc2.connect(osc2Gain);
+    tine.connect(tineGain);
+
+    osc1Gain.connect(filter);
+    osc2Gain.connect(filter);
+    tineGain.connect(filter);
+    filter.connect(masterNoteGain);
+
+    // Natural Piano Envelope
+    masterNoteGain.gain.exponentialRampToValueAtTime(1.0, time + 0.02);
+    masterNoteGain.gain.exponentialRampToValueAtTime(0.35, time + 0.35);
+    masterNoteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+    osc1.start(time);
+    osc2.start(time);
+    tine.start(time);
+
+    osc1.stop(time + duration + 0.1);
+    osc2.stop(time + duration + 0.1);
+    tine.stop(time + duration + 0.1);
+  } else if (style === 'kalimba' || style === 'bells') {
+    // 🔔 Peaceful Kalimba / Music Box / Crystal Bell
+    const osc = c.createOscillator();
+    const overtone = c.createOscillator();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, time);
+
+    overtone.type = 'sine';
+    overtone.frequency.setValueAtTime(freq * 2.756, time); // acoustic inharmonic bell ratio
+
+    const oscGain = c.createGain();
+    const overtoneGain = c.createGain();
+
+    oscGain.gain.setValueAtTime(0.25 * velocity, time);
+    overtoneGain.gain.setValueAtTime(0.06 * velocity, time);
+    overtoneGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.4);
+
+    osc.connect(oscGain);
+    overtone.connect(overtoneGain);
+    oscGain.connect(masterNoteGain);
+    overtoneGain.connect(masterNoteGain);
+
+    masterNoteGain.gain.exponentialRampToValueAtTime(1.0, time + 0.01);
+    masterNoteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration * 1.2);
+
+    osc.start(time);
+    overtone.start(time);
+    osc.stop(time + duration * 1.3);
+    overtone.stop(time + duration * 1.3);
+  } else {
+    // 🪈 Soothing Temple Flute
+    const osc = c.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(freq, time);
+
+    const filter = c.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(freq * 2.2, time);
+
+    const fGain = c.createGain();
+    fGain.gain.setValueAtTime(0.22 * velocity, time);
+
+    osc.connect(filter);
+    filter.connect(fGain);
+    fGain.connect(masterNoteGain);
+
+    // Soft breathy attack and release
+    masterNoteGain.gain.exponentialRampToValueAtTime(1.0, time + 0.12);
+    masterNoteGain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+    osc.start(time);
+    osc.stop(time + duration + 0.1);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PLAY ENGINE: Real Generative Melodic Music + Brainwave Waves
    ══════════════════════════════════════════════════════════════ */
 export function play(preset, vol = 0.5) {
   stop();
@@ -172,10 +354,9 @@ export function play(preset, vol = 0.5) {
   const now = ctx.currentTime;
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, now);
-  // Smooth pleasant fade-in over 1.2s to prevent abrupt volume shock
+  // Smooth pleasant fade-in over 1.2s to prevent click
   master.gain.exponentialRampToValueAtTime(Math.max(0.0001, vol), now + 1.2);
 
-  // Setup Live Analyser Node
   if (!analyser) {
     analyser = ctx.createAnalyser();
     analyser.fftSize = 64;
@@ -185,198 +366,34 @@ export function play(preset, vol = 0.5) {
   analyser.connect(ctx.destination);
 
   const activeNodes = [];
+  let musicTimer = null;
+
   const register = (node) => {
     activeNodes.push(node);
     return node;
   };
 
-  /* ── 1. PROCEDURAL OCEAN SURF (Rhythmic, Natural, Zero Harshness) ── */
-  if (preset.type === 'ocean') {
-    const noise = register(createNoiseBuffer(ctx, 'brown'));
+  /* ── 1. REAL GENERATIVE PEACEFUL MUSIC ── */
+  if (preset.type === 'music') {
+    const musicBus = register(ctx.createGain());
+    musicBus.gain.setValueAtTime(0.85, now);
+    musicBus.connect(master);
 
-    // Resonant sweep filter strictly kept between 140Hz and 420Hz (warm, zero harsh roaring)
-    const waveFilter = register(ctx.createBiquadFilter());
-    waveFilter.type = 'lowpass';
-    waveFilter.frequency.setValueAtTime(220, now);
-    waveFilter.Q.setValueAtTime(1.8, now);
-
-    // Filter LFO (ocean period ~10s)
-    const filterLfo = register(ctx.createOscillator());
-    const filterLfoGain = register(ctx.createGain());
-    filterLfo.frequency.setValueAtTime(1 / preset.wavePeriod, now);
-    filterLfoGain.gain.setValueAtTime(180, now);
-    filterLfo.connect(filterLfoGain);
-    filterLfoGain.connect(waveFilter.frequency);
-    filterLfo.start(now);
-
-    // Wave amplitude swelling LFO
-    const swellGain = register(ctx.createGain());
-    swellGain.gain.setValueAtTime(0.18, now);
-    const ampLfo = register(ctx.createOscillator());
-    const ampLfoGain = register(ctx.createGain());
-    ampLfo.frequency.setValueAtTime(1 / preset.wavePeriod, now);
-    ampLfoGain.gain.setValueAtTime(0.14, now);
-    ampLfo.connect(ampLfoGain);
-    ampLfoGain.connect(swellGain.gain);
-    ampLfo.start(now);
-
-    noise.connect(waveFilter);
-    waveFilter.connect(swellGain);
-    swellGain.connect(master);
-    noise.start(now);
-  }
-
-  /* ── 2. PROCEDURAL GENTLE RAIN (Soft, Cozy, Filtered) ── */
-  else if (preset.type === 'rain') {
-    const pinkNoise = register(createNoiseBuffer(ctx, 'pink'));
-    const brownNoise = register(createNoiseBuffer(ctx, 'brown'));
-
-    // Soft rain droplets layer (warm bandpass at 650 Hz with gentle Q)
-    const rainFilter = register(ctx.createBiquadFilter());
-    rainFilter.type = 'bandpass';
-    rainFilter.frequency.setValueAtTime(650, now);
-    rainFilter.Q.setValueAtTime(0.7, now);
-
-    const rainGain = register(ctx.createGain());
-    rainGain.gain.setValueAtTime(0.18, now);
-
-    // Warm distant low-frequency rain hum (lowpass at 180 Hz)
-    const rumbleFilter = register(ctx.createBiquadFilter());
-    rumbleFilter.type = 'lowpass';
-    rumbleFilter.frequency.setValueAtTime(180, now);
-
-    const rumbleGain = register(ctx.createGain());
-    rumbleGain.gain.setValueAtTime(0.14, now);
-
-    pinkNoise.connect(rainFilter);
-    rainFilter.connect(rainGain);
-    rainGain.connect(master);
-    pinkNoise.start(now);
-
-    brownNoise.connect(rumbleFilter);
-    rumbleFilter.connect(rumbleGain);
-    rumbleGain.connect(master);
-    brownNoise.start(now);
-  }
-
-  /* ── 3. PURE SMOOTH WARM NOISE (Brown / Pink) ── */
-  else if (preset.type === 'pure_noise') {
-    const noise = register(createNoiseBuffer(ctx, preset.noiseType));
-    const filter = register(ctx.createBiquadFilter());
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(preset.filterFreq, now);
-
-    const gain = register(ctx.createGain());
-    gain.gain.setValueAtTime(preset.noiseType === 'brown' ? 0.35 : 0.2, now);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(master);
-    noise.start(now);
-  }
-
-  /* ── 4. SOLFEGGIO 528 HZ WARMTH (Pleasant, Soft Choral, Zero Screech) ── */
-  else if (preset.type === 'solfeggio_warm') {
-    // Solfeggio 528 Hz is voiced as a lush, warm C-major choir pad:
-    // Grounded in warm, soothing low octaves (C3 132 Hz, C4 264 Hz, E4 330 Hz, G4 396 Hz)
-    // 528 Hz is included as a whisper-soft overtone, NOT a loud piercing screech!
-    const voices = [
-      { f: 132.0, g: 0.12, pan: 0, type: 'sine' },      // C3 (Warm root foundation)
-      { f: 264.0, g: 0.09, pan: -0.2, type: 'triangle' }, // C4 (Warm octave)
-      { f: 330.0, g: 0.07, pan: 0.2, type: 'sine' },    // E4 (Major third warmth)
-      { f: 396.0, g: 0.04, pan: -0.3, type: 'sine' },   // Solfeggio 396 Hz (Liberation frequency)
-      { f: 528.0, g: 0.02, pan: 0.3, type: 'sine' },    // Solfeggio 528 Hz (Subtle soft overtone)
-    ];
-
-    const padFilter = register(ctx.createBiquadFilter());
-    padFilter.type = 'lowpass';
-    padFilter.frequency.setValueAtTime(450, now); // strictly cut harsh high frequencies
-
+    // A. Warm Background Pad Drone (Soft Chord Base)
+    let chordIndex = 0;
     const padGain = register(ctx.createGain());
-    padGain.gain.setValueAtTime(0.2, now);
+    padGain.gain.setValueAtTime(0.12, now);
+    padGain.connect(musicBus);
 
-    // Choral breathing LFO (slow 0.06 Hz pulse)
-    const lfo = register(ctx.createOscillator());
-    const lfoGain = register(ctx.createGain());
-    lfo.frequency.setValueAtTime(0.06, now);
-    lfoGain.gain.setValueAtTime(0.04, now);
-    lfo.connect(lfoGain);
-    lfoGain.connect(padGain.gain);
-    lfo.start(now);
-
-    voices.forEach((v, idx) => {
-      const osc = register(ctx.createOscillator());
-      osc.type = v.type;
-      osc.frequency.setValueAtTime(v.f, now);
-      // Subtle detune for lush organic texture
-      osc.detune.setValueAtTime((idx - 2) * 2.5, now);
-
-      const panner = register(ctx.createStereoPanner());
-      panner.pan.setValueAtTime(v.pan, now);
-
-      const vGain = register(ctx.createGain());
-      vGain.gain.setValueAtTime(v.g, now);
-
-      osc.connect(panner);
-      panner.connect(vGain);
-      vGain.connect(padFilter);
-      osc.start(now);
-    });
-
-    padFilter.connect(padGain);
-    padGain.connect(master);
-  }
-
-  /* ── 5. WARM AMBIENT PAD WITH SUBTLE BINAURAL PULSE ── */
-  else {
-    // A. Lush Warm Ambient Pad Chords (Sine + Triangle with Analog Lowpass)
-    const chordGain = register(ctx.createGain());
-    chordGain.gain.setValueAtTime(0.18, now);
-
-    const padFilter = register(ctx.createBiquadFilter());
-    padFilter.type = 'lowpass';
-    padFilter.frequency.setValueAtTime(preset.filterFreq || 440, now);
-    padFilter.Q.setValueAtTime(1.1, now);
-
-    // Gentle breathing movement on the pad
-    const padLfo = register(ctx.createOscillator());
-    const padLfoGain = register(ctx.createGain());
-    padLfo.frequency.setValueAtTime(preset.lfoSpeed || 0.08, now);
-    padLfoGain.gain.setValueAtTime(0.035, now);
-    padLfo.connect(padLfoGain);
-    padLfoGain.connect(chordGain.gain);
-    padLfo.start(now);
-
-    const chord = preset.chord || [146.83, 220.00, 293.66];
-    chord.forEach((f, idx) => {
-      const osc = register(ctx.createOscillator());
-      osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
-      osc.frequency.setValueAtTime(f, now);
-
-      // Analog detuning for rich acoustic warmth
-      osc.detune.setValueAtTime((idx - 1) * 3, now);
-
-      const oscGain = register(ctx.createGain());
-      oscGain.gain.setValueAtTime(0.11 / chord.length, now);
-
-      osc.connect(oscGain);
-      oscGain.connect(padFilter);
-      osc.start(now);
-    });
-
-    padFilter.connect(chordGain);
-    chordGain.connect(master);
-
-    // B. Subtle, Warm Binaural Beat (Soft, pleasant, non-headache)
+    // B. Subtle Brainwave Entrainment Underneath Music (Pleasant, warm, non-headache)
     if (preset.carrier && preset.beat) {
       const beatGain = register(ctx.createGain());
-      beatGain.gain.setValueAtTime(0.035, now); // Soft, comfortable level
+      beatGain.gain.setValueAtTime(0.035, now); // Soft, comfortable background presence
 
       const beatFilter = register(ctx.createBiquadFilter());
       beatFilter.type = 'lowpass';
-      beatFilter.frequency.setValueAtTime(260, now); // strictly warm low frequencies
+      beatFilter.frequency.setValueAtTime(260, now);
 
-      // Left Ear
       const oscL = register(ctx.createOscillator());
       const panL = register(ctx.createStereoPanner());
       oscL.type = 'sine';
@@ -386,7 +403,6 @@ export function play(preset, vol = 0.5) {
       panL.connect(beatFilter);
       oscL.start(now);
 
-      // Right Ear (Carrier + Beat Frequency)
       const oscR = register(ctx.createOscillator());
       const panR = register(ctx.createStereoPanner());
       oscR.type = 'sine';
@@ -400,24 +416,107 @@ export function play(preset, vol = 0.5) {
       beatGain.connect(master);
     }
 
-    // C. Soft Noise Bed
-    if (preset.noiseType && preset.noiseVol) {
-      const noise = register(createNoiseBuffer(ctx, preset.noiseType));
-      const nFilter = register(ctx.createBiquadFilter());
-      nFilter.type = 'lowpass';
-      nFilter.frequency.setValueAtTime(400, now);
-
-      const nGain = register(ctx.createGain());
-      nGain.gain.setValueAtTime(preset.noiseVol, now);
-
-      noise.connect(nFilter);
-      nFilter.connect(nGain);
-      nGain.connect(master);
-      noise.start(now);
+    // C. Natural Ambient Texture (Rain, Ocean, Vinyl Crackle, Air)
+    if (preset.ambient === 'rain') {
+      const pNoise = register(createNoiseBuffer(ctx, 'pink'));
+      const rFilter = register(ctx.createBiquadFilter());
+      rFilter.type = 'bandpass';
+      rFilter.frequency.setValueAtTime(650, now);
+      rFilter.Q.setValueAtTime(0.7, now);
+      const rGain = register(ctx.createGain());
+      rGain.gain.setValueAtTime(0.14, now);
+      pNoise.connect(rFilter);
+      rFilter.connect(rGain);
+      rGain.connect(master);
+      pNoise.start(now);
+    } else if (preset.ambient === 'ocean') {
+      const bNoise = register(createNoiseBuffer(ctx, 'brown'));
+      const oFilter = register(ctx.createBiquadFilter());
+      oFilter.type = 'lowpass';
+      oFilter.frequency.setValueAtTime(240, now);
+      const oGain = register(ctx.createGain());
+      oGain.gain.setValueAtTime(0.18, now);
+      const oLfo = register(ctx.createOscillator());
+      const oLfoGain = register(ctx.createGain());
+      oLfo.frequency.setValueAtTime(0.09, now);
+      oLfoGain.gain.setValueAtTime(160, now);
+      oLfo.connect(oLfoGain);
+      oLfoGain.connect(oFilter.frequency);
+      oLfo.start(now);
+      bNoise.connect(oFilter);
+      oFilter.connect(oGain);
+      oGain.connect(master);
+      bNoise.start(now);
+    } else if (preset.ambient === 'vinyl') {
+      const bNoise = register(createNoiseBuffer(ctx, 'brown'));
+      const vFilter = register(ctx.createBiquadFilter());
+      vFilter.type = 'lowpass';
+      vFilter.frequency.setValueAtTime(280, now);
+      const vGain = register(ctx.createGain());
+      vGain.gain.setValueAtTime(0.08, now);
+      bNoise.connect(vFilter);
+      vFilter.connect(vGain);
+      vGain.connect(master);
+      bNoise.start(now);
     }
+
+    // D. Generative Music Melody Sequencer Loop
+    // Schedules peaceful, harmonious notes and chord progressions over time
+    const chords = preset.chords || [[N.C3, N.G3, N.E4]];
+    const scale = preset.scale || [N.C4, N.D4, N.E4, N.G4, N.A4, N.C5];
+    const tempo = preset.tempoMs || 2000;
+
+    let step = 0;
+    const playMusicalStep = () => {
+      if (!cur) return;
+      const t = ctx.currentTime;
+
+      // 1. Play Soft Background Chord Root & Harmony every 4 steps
+      if (step % 4 === 0) {
+        const chord = chords[chordIndex % chords.length];
+        chordIndex++;
+        chord.forEach((freq) => {
+          playInstrumentNote(ctx, padGain, freq, t, 5.5, 'piano_ambient', 0.5);
+        });
+      }
+
+      // 2. Play 1 or 2 Peaceful Melodic Notes
+      const noteCount = Math.random() > 0.4 ? 1 : 2;
+      for (let i = 0; i < noteCount; i++) {
+        const noteDelay = i * (0.35 + Math.random() * 0.25);
+        const randomNote = scale[Math.floor(Math.random() * scale.length)];
+        const velocity = 0.6 + Math.random() * 0.35;
+        const duration = 2.0 + Math.random() * 1.5;
+
+        playInstrumentNote(ctx, musicBus, randomNote, t + noteDelay, duration, preset.style, velocity);
+      }
+
+      step++;
+      const nextDelay = tempo * (0.85 + Math.random() * 0.3); // humanized breathing tempo
+      musicTimer = setTimeout(playMusicalStep, nextDelay);
+    };
+
+    // Begin the peaceful music progression immediately
+    playMusicalStep();
   }
 
-  cur = { id: preset.id, nodes: activeNodes, master };
+  /* ── 2. PURE SMOOTH WARM NOISE (Brown / Pink) ── */
+  else {
+    const noise = register(createNoiseBuffer(ctx, preset.noiseType));
+    const filter = register(ctx.createBiquadFilter());
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(preset.filterFreq || 400, now);
+
+    const gain = register(ctx.createGain());
+    gain.gain.setValueAtTime(preset.noiseType === 'brown' ? 0.35 : 0.2, now);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(master);
+    noise.start(now);
+  }
+
+  cur = { id: preset.id, nodes: activeNodes, master, musicTimer };
 }
 
 export const setVol = (v) => {
@@ -433,13 +532,14 @@ export function stop() {
     sleepTimeout = null;
   }
   if (!cur) return;
-  const { nodes, master } = cur;
+  const { nodes, master, musicTimer } = cur;
+  if (musicTimer) clearTimeout(musicTimer);
   cur = null;
 
   if (ctx && master) {
     const now = ctx.currentTime;
     master.gain.cancelScheduledValues(now);
-    master.gain.setTargetAtTime(0.0001, now, 0.2); // Smooth 200ms fade-out
+    master.gain.setTargetAtTime(0.0001, now, 0.25); // Smooth fade-out
   }
 
   setTimeout(() => {
@@ -468,7 +568,6 @@ export function setSleepTimer(minutes, onEnd) {
 export function chime() {
   wake();
   const now = ctx.currentTime;
-  // A warm, soothing pentatonic chime sequence: C4 (261 Hz), E4 (330 Hz), G4 (392 Hz)
   [261.63, 329.63, 392.00].forEach((f, i) => {
     const o = ctx.createOscillator();
     const g = ctx.createGain();
@@ -483,7 +582,7 @@ export function chime() {
 
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(0.18, t + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8); // warm lingering decay
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
 
     o.connect(filter);
     filter.connect(g);
@@ -498,7 +597,6 @@ export function chime() {
 export function breatheCue(phase = 'inhale') {
   wake();
   const now = ctx.currentTime;
-  // Subtle, soft singing bowl resonance: Inhale (E4 330Hz), Hold (G4 392Hz), Exhale (C4 261.6Hz)
   const freq = phase === 'inhale' ? 329.63 : phase === 'hold' ? 392.00 : 261.63;
 
   const o = ctx.createOscillator();
@@ -511,7 +609,6 @@ export function breatheCue(phase = 'inhale') {
   filter.type = 'lowpass';
   filter.frequency.setValueAtTime(freq * 1.8, now);
 
-  // Very gentle volume: 0.07, long smooth decay
   g.gain.setValueAtTime(0.0001, now);
   g.gain.exponentialRampToValueAtTime(0.07, now + 0.06);
   g.gain.exponentialRampToValueAtTime(0.0001, now + 1.5);
